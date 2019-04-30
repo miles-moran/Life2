@@ -1,0 +1,39 @@
+.locale {
+    width: 3em;
+    height: 3em;
+    border: 1px solid black;
+    display: inline-block;
+    background-color: rgb(235, 235, 235);
+}
+
+.row {
+    height: 3.1em;
+}
+
+#frame {
+    margin: 1em; 
+}
+
+.test {
+    background-color: purple;
+}
+
+#data {
+    height: 10em;
+    border: 1px solid black;
+    width: 10em;
+    font-size: 2em;
+}
+
+
+.photos {
+    background-color: green;
+}
+
+.predator {
+    background-color: purple;
+}
+
+.apex {
+    background-color: pink;
+}
