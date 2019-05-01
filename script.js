@@ -30,6 +30,47 @@ function Predator(locale){
     this.age = 0;
     this.hunting = false;
     this.following = false;
+    this.move = function predatorMove(depth){
+        let life = this;
+        for (let i = 0; i <= depth; i++){
+             let r = ring(life.locale, i);
+             for (let j = 0; j < r.length; j++){
+                 if (r[j].occupant && r[j].occupant.type == "photos"){
+                     r[j].occupant.hunting = true;
+                     let neighbors = getNeighbors(life.locale.x, life.locale.y, 1);
+                     let nDistances = Array();
+                     for (let k = 0; k < neighbors.length; k++){
+                         if (neighbors[k] != null){
+                             if (neighbors[k].occupant == null || (neighbors[k].occupant != null && neighbors[k].occupant.type == "photos")){
+                                 nDistances.push(calculateDistance(neighbors[k].x, neighbors[k].y, r[j].x, r[j].y));
+                             } else {
+                                 nDistances.push(1000);
+                             }
+                         }
+                     }
+                     let destination = neighbors[findMinIndex(nDistances)];
+                     if (destination != null){
+                         let oldX = life.locale.x;
+                         let oldY = life.locale.y;
+                         if (destination.occupant && destination.occupant != "predator"){
+                             consume(life, destination.occupant);
+                         }
+                         life.locale = destination;
+                         destination.occupant = life;
+                         vacateLocale(oldX, oldY);
+                         return;
+                     }
+                 }
+             }
+        }
+        if(followWithVision(life, depth)){
+            return;
+        }
+        life.hunting = false;
+        move(life);   
+     }
+    
+
 }
 
 function Apex(locale){
@@ -43,6 +84,42 @@ function Apex(locale){
     this.age = 0;
     this.hunting = false;
     this.following = false;
+    this.move = function apexMove(depth){
+        let life = this;
+        for (let i = 0; i <= depth; i++){
+             let r = ring(life.locale, i);
+             for (let j = 0; j < r.length; j++){
+                 if (r[j].occupant && r[j].occupant.type == "predator"){
+                     let neighbors = getNeighbors(life.locale.x, life.locale.y, 1);
+                     let nDistances = Array();
+                     for (let k = 0; k < neighbors.length; k++){
+                         if (neighbors[k] != null){
+                             if (neighbors[k].occupant == null || neighbors[k].occupant.type == "predator"){
+                                 nDistances.push(calculateDistance(neighbors[k].x, neighbors[k].y, r[j].x, r[j].y));
+                             } else {
+                                 nDistances.push(1000);
+                             }
+                         }
+                     }
+                     let destination = neighbors[findMinIndex(nDistances)];
+                     if (destination != null){
+                         let oldX = life.locale.x;
+                         let oldY = life.locale.y;
+                         if (destination.occupant && destination.occupant.type == "predator"){
+                             consume(life, destination.occupant);
+                         }
+                         life.locale = destination;
+                         destination.occupant = life;
+                         vacateLocale(oldX, oldY);
+                         return;
+                     }
+                 }
+             }
+        }
+        life.hunting = false;
+        move(life);   
+     }
+    
 }
   
 
@@ -134,9 +211,9 @@ function generateLife(){
             if (rows[r][c].occupant == null){
                 if (chance(100) == 0){
                     rows[r][c].occupant = new Photos(rows[r][c]);
-                } else if (chance(500) == 0){
+                } else if (chance(100) == 0){
                     rows[r][c].occupant = new Predator(rows[r][c]);
-                } else if (chance(1000) == 0){
+                } else if (chance(100) == 0){
                     rows[r][c].occupant = new Apex(rows[r][c]);
                 }
             }
@@ -174,7 +251,6 @@ function photosynthesize(){
     let life = findSpecies("photos");
     for (let i = 0; i < life.length; i++){
         life[i].energy = life[i].energy + life[i].absorbtionRate;
-        console.log("test");
     }
 }
 
@@ -227,9 +303,9 @@ function getNeighbors(x, y, d){
 }
 
 function moveMovers(){
-    let predators = findSpecies("predator");
-    for (let i = 0; i < predators.length; i++){
-        moveWithVision(predators[i], 5);
+    let movers = findSpecies(["predator", "apex"]);
+    for (let i = 0; i < movers.length; i++){
+        movers[i].move(4);
     }
 }
 
@@ -243,9 +319,9 @@ function move(life){
             if (destination.occupant){
                 consume(life, destination.occupant);
             }
-            life.locale = destination;
-            destination.occupant = life;
-            vacateLocale(oldX, oldY);
+                life.locale = destination;
+                destination.occupant = life;
+                vacateLocale(oldX, oldY);
             } else {
                 move(life);
             }
@@ -276,44 +352,6 @@ function ring(locale, distance){
     return ring;
 }
 
-function moveWithVision(life, depth){
-   for (let i = 0; i <= depth; i++){
-        let r = ring(life.locale, i);
-        for (let j = 0; j < r.length; j++){
-            if (r[j].occupant && r[j].occupant.type == "photos"){
-                r[j].occupant.hunting = true;
-                let neighbors = getNeighbors(life.locale.x, life.locale.y, 1);
-                let nDistances = Array();
-                for (let k = 0; k < neighbors.length; k++){
-                    if (neighbors[k] != null){
-                        if (neighbors[k].occupant == null || (neighbors[k].occupant != null && neighbors[k].occupant.type == "photos")){
-                            nDistances.push(calculateDistance(neighbors[k].x, neighbors[k].y, r[j].x, r[j].y));
-                        } else {
-                            nDistances.push(1000);
-                        }
-                    }
-                }
-                let destination = neighbors[findMinIndex(nDistances)];
-                if (destination != null){
-                    let oldX = life.locale.x;
-                    let oldY = life.locale.y;
-                    if (destination.occupant && destination.occupant != "predator"){
-                        consume(life, destination.occupant);
-                    }
-                    life.locale = destination;
-                    destination.occupant = life;
-                    vacateLocale(oldX, oldY);
-                    return;
-                }
-            }
-        }
-   }
-   if(followWithVision(life, depth)){
-       return;
-   }
-   life.hunting = false;
-   move(life);   
-}
 function followWithVision(life, depth){
     for (let i = 0; i <= 10; i++){
          let r = ring(life.locale, i);
@@ -356,12 +394,26 @@ function findMinIndex(nums){
 }
 
 function findSpecies(species){
-    let life = Array()
-    for (let r = 0; r < rows.length; r++){
-        for (let c = 0; c < rows[r].length; c++){
-            if (rows[r][c].occupant != null){
-                if (rows[r][c].occupant.type == species){
-                    life.push(rows[r][c].occupant);
+    let life = Array();
+    if (Array.isArray(species)){
+        for (let r = 0; r < rows.length; r++){
+            for (let c = 0; c < rows[r].length; c++){
+                if (rows[r][c].occupant != null){
+                    for (let s = 0; s < species.length; s++){
+                        if (rows[r][c].occupant.type == species[s]){
+                            life.push(rows[r][c].occupant);
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        for (let r = 0; r < rows.length; r++){
+            for (let c = 0; c < rows[r].length; c++){
+                if (rows[r][c].occupant != null){
+                    if (rows[r][c].occupant.type == species){
+                        life.push(rows[r][c].occupant);
+                    }
                 }
             }
         }
@@ -383,4 +435,6 @@ function bigBang(){
     displayWorld();
 }
 
+
 bigBang();
+
